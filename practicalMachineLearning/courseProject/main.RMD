@@ -1,0 +1,77 @@
+Practical Machine Learning - Course Project
+======================================================
+
+## Executive Summary
+- This project uses machine learning techniques via R to make classification decisions about which type of FitBit user a person is in the test data given their predictor variable values.
+- An ensemble of 20 boosting and random forest models are trained and tested against the validation set; the top 20 of these models (as chosen by out-of-sample error) are used to predict the values in the actual test set.
+- Based on the top 20 out-of-sample errors calculated for each of these top predictors ranging between 0.92 and 0.94, I would expect a 95% accuracy on the test set because ensembled models typically increases the accuracy compared to any one of the specific models.
+
+- Configure global environment:
+
+```{r setup, include=FALSE}
+# default all code blocks to cache their results
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+- Preprocessing:
+
+```{r}
+library(plyr); library(dplyr); library(randomForest)
+
+# download the training & test sets
+download.file(url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",
+              destfile = "./train.csv")
+download.file(url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",
+              destfile = "./test.csv")
+# read the CSVs into data frames, drop redundant primary key, move outcome variable to first column
+TEST <- read.csv("./test.csv"); TEST <- TEST[ , -1]
+TRAIN <- read.csv("./train.csv", na.strings = c("NA", "")); TRAIN <- TRAIN[ , -1]
+TRAIN <- TRAIN %>% dplyr::select(classe, everything())
+# eliminate columns from the training set if they have more than 20% missing values
+TRAIN <- TRAIN[ , apply(TRAIN, 2,  
+                        function(x) if (sum(!is.na(x)) / length(x) >= 0.8) {TRUE} else {FALSE})]
+# only allow integer, numeric, and factor columns
+TRAIN <- TRAIN[ , sapply(TRAIN, class) %in% c("integer", "numeric") | names(TRAIN) %in% "classe"]
+# impute missing data into the training test set via the random forest's NA roughfix
+TRAIN <- randomForest::na.roughfix(TRAIN)
+```
+
+- Train 10 boosting and random forest models on different subsets on the training data and test the results on the remaining validation set:
+
+```{r}
+library(caret)
+
+predTest <- as.data.frame(matrix(nrow = nrow(TEST), ncol = 0))
+accrcy <- numeric(0)
+simuls <- 20
+for (idx in 1:simuls) {    
+    print(paste("index:", idx)) 
+    set.seed(idx)
+    trainIndex <- caret::createDataPartition(y = TRAIN$classe, p = 0.03, list = FALSE)
+    train_iter <- TRAIN[trainIndex, ]; test_iter <- TRAIN[-trainIndex, ]
+    
+    # predict on the actual TEST set
+    modFitRF <- caret::train(classe ~ ., data = train_iter, method = "rf") 
+    modFitGBM <- caret::train(classe ~ ., data = train_iter, method = "gbm", verbose = FALSE)
+    predTest <- cbind(predTest, RF = as.character(predict(modFitRF, TEST)), 
+                      GBM = as.character(predict(modFitGBM, TEST)))
+    
+     # cross validate on the validation set to see what the accuracy is
+    accrcy <- c(accrcy, sum((predict(modFitRF, test_iter) == test_iter$classe)) / nrow(test_iter),  
+                            sum((predict(modFitGBM, test_iter) == test_iter$classe)) / nrow(test_iter))
+}      
+```
+
+- Only use the half of the models that have the best results on the out-of-sample validation error:
+
+```{r}
+# only subset the half the columns (length 20) that have the best accuracy as stored in the accrcy vector
+mPredTest <- as.matrix(predTest)[ , accrcy %in% sort(accrcy, decreasing = TRUE)[1:simuls]]
+# show the validation set errors that these 20 used predictors have
+print("The validation set accuracies for the 20 best models are:")
+print(sort(accrcy, decreasing = TRUE)[1:simuls])
+# assign the prediction for a sample to the mode of all the predictions
+ClassPred <- apply(mPredTest, 1, function(x) unique(x)[which.max(tabulate(match(x, unique(x))))])
+print("The predictions for test set 1-20 are:")
+print(ClassPred)
+```

@@ -1,0 +1,4 @@
+- This project uses classification ensemble machine learning methods to predict which fitness type a user is based on their FitBit measures.
+- Fitbit data are used to predict which users correspond to the data.
+- Please access ./main.RMD to see a write up of the methodology used in this project.
+- The training and test data exist at ./train.csv & ./test.csv, respectively (request from Erhard Menker at ejmenker@gmail.com - cannot be stored on repo because of size limitations)
