@@ -1,0 +1,55 @@
+Statistical Inference Course Project - Part 1
+==============================================================
+Author: Erhard Menker
+==============================================================
+
+## Overview 
+
+- This project examines the limiting characteristics of averaging 1000 samples of 40 IID exponential random variates. This project looks at the means and variances of these samples and tests to see whether the distributions of means is normally distributed as hypothesized by the Central Limit Theorem
+
+## Supporting Calculations
+
+- Calculate the data for the simulation that will be used in the rest of the report
+
+```{r, cache=TRUE}
+# 1000 times, simulate 40 exponential RVs at lambda=0.2 (each column is one of these groups of 40)
+m_exp <- matrix(rexp(40 * 1000, 0.2), 40, 1000) 
+```
+
+- Examine the means of each simulation of the group of 40 exponential RVs
+
+```{r, cache=TRUE}
+# calculate the mean of each grouping
+means <- apply(m_exp, 2, mean)
+
+# produce a summary of statistics on the means of the groups and show a histogram
+summary(means)
+
+require(ggplot2)
+ggplot2::qplot(means) + 
+    geom_histogram(fill="white", color="darkgreen") +
+    labs(list(title="Distribution of Sample Means", xlab="Means", ylab="Frequency"))
+    
+# do an anderson-darling test to test for normality
+require(nortest)
+ad.test(means)
+```
+
+### Point 1 (Mean Examination)
+- The distribution of sample means is very close to the theoretical means. With a lambda of 0.2, the theoretical mean is 5. The median of the 1000 sample means of 40 exponentials is 5.012 while the mean of the sample means is 5.061. The mean of the sample means being larger than the median is concordant with the exponential distribution being right skewed. 
+
+### Point 2 (Normality Examination)
+- With a p-value of less than 0.01 for the Anderson-Darling normality test, we reject the null hypothesis of normality at a 99% level (even though the histogram is starting to look bell shaped, the sample size must still be too small for the Central Limit Theorem to take sufficient effect for this hypothesis test. Specifically, right skew can be seen which is detrimental to accepting the null hypothesis of normality)
+
+- Examine the variance of each simulation of the group of 40 exponential RVs
+
+```{r, cache=TRUE}
+# calculate the variance of each grouping
+vars <- apply(m_exp, 2, var)
+
+# produce a summary of statistics on the variance of the groups 
+summary(vars)
+```
+
+### Point 3 (Variance Examination)
+- The theoretical variance is the square of the standard deviation, or 25. With a median of the 1000 sample variances being 23.310 and the mean being 25.13, the empirical variances are close to the theoretical variance. The median of the sample variance being less than the mean again makes sense given the right skew of the exponential; most of the distributions must have had a lot of data crunched to the left tail, reducing variance compared to the expectation for most of them. However, distribution samples with data in the far right tail would have drastically increased variances and skewing the sample variance distribution right.

@@ -1,0 +1,66 @@
+---
+output: html_document
+---
+Statistical Inference Course Project - Part 2
+====================================================
+Author: Erhard Menker
+====================================================
+
+## Pre-Processing
+
+```{r}
+# load the built-in ToothGrowth data set
+data("ToothGrowth")
+```
+
+## Descriptive Statistics
+
+```{r}
+# what are the dimensions of the data set?
+dim(ToothGrowth)
+
+# summarize each column
+summary(ToothGrowth$len)
+summary(ToothGrowth$supp)
+summary(ToothGrowth$dose)
+```
+
+### Descriptive Statistics Analysis:
+- ToothGrowth has 60 rows and 3 columns. Columns "len" and "dose" are numerical variables with a range of 4.2 through 33.9 and 0.5 through 2, respectively. "len" is the length of the blast while "dose" is the amount of nutrient the guinea pig was given. "supp" is a factor with 2 levels: "OJ" and "VC" for "orange juice" and "vitamin C", respectively
+
+## Exploratory Data Analysis
+
+```{r}
+require(ggplot2)
+
+# plot "len" as a function of "dose" based on the facet of "supp"
+ggplot2::qplot(dose, len, data=ToothGrowth, facets=supp~.) +
+    geom_point(color="darkblue") +
+    stat_smooth(method="lm", color="black") +
+    labs(title="The Impact of a Nutrient Dose on Odontoblast Length")
+```
+
+### Exploratory Data Analysis Summary:
+- There is a positive relationship between overall the length of the odontoblast based on the dose of the nutrient given. However, this slope appears steeper when the nutrient is vitamin C, indicating that increasing the vitamin C dose by a level has a sharper impact on increasing the odontoblast length as compared to the orange juice supplement.
+
+## Statistical Inference
+
+```{r}
+# split the data frame based on the categorical variable of supplement (30 observations each)
+SUPP_SPLIT <- split(ToothGrowth, ToothGrowth$supp)
+
+# conduct a naive two-tailed hypothesis test to see if the length is statisically different based on the supplement type
+t.test(SUPP_SPLIT$OJ$len, SUPP_SPLIT$VC$len, alternative="two.sided", paired=FALSE, var.equal=FALSE)$p.val
+
+# calculate the means of the two variables to see which tail hypothesis test should be run
+mean(SUPP_SPLIT$OJ$len)
+mean(SUPP_SPLIT$VC$len)
+
+# conduct a one-tailed hypothesis test to see if the length of odontoblast is statistically significantly larger for OJ than VC supplement takers
+t.test(SUPP_SPLIT$OJ$len, SUPP_SPLIT$VC$len, alternative="greater", paired=FALSE, var.equal=FALSE)$p.val
+```
+
+### Statistical Inference Summary:
+- After splitting the ToothGrowth dataframe based on the supplement factor, hypothesis tests are executed at the 95% confidence level: 
+1) First, a two-tailed test is conducted to see if there is a statistically significant difference in underlying population means between the lengths for the two different supplements (no reason to assume equal variances or paired observations). With a p-value of 0.06, we fail to reject the null of statistically equivalent population distribution means at the 95% confidence level under this two-tailed t-test.
+2) Second, we see if this result holds with a one-tailed hypothesis test (where rejecting the null hypothesis is easier because of an increased rejection region). We take the means and see that the length of OJ supplements is larger than VC ones. Conducting a one-tailed hypothesis test under similar conditions to test if OJ supplement lengths come from a population mean statistically significantly larger than that of VC, we get a p-value of 0.03. We therefore reject the null hypothesis at the 95% confidence level, concluding that OJ supplement takers have a statistically significantly larger odontoblast level distribution than VC takers under this one-tailed t-test.
