@@ -1,4 +1,0 @@
-- ./DOCUMENTATION.RMD shows where to access the shiny App housed online, and what the motivation/operating details behind it are
-- ./server.R houses the underlying code specifying how the calculations occur (e.g. plotting, shocking variables, subsetting mtcars, etc)
-- ./ui.R interfaces the calculations occurring in server.R with usability for a user (e.g. creates the sliders & checkboxes)
-- ./reproduciblePitch.RMD presents the motivation and visuals for this application 
