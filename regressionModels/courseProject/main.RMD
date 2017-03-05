@@ -1,0 +1,80 @@
+Regression Models - Course Project
+==============================================================
+
+### Executive Summary
+
+- This is a report that models the impact of a car's transmission type on its actualized miles per gallon (mpg). This project sources the built in mtcars dataset to provide evidence that works towards answering this question. While initially finding a significant univariate relationship between a car's transmission type and miles per gallon, we correct for omitted variable bias by including the statistically significant weight variable. This correction results in a regression model, estimated with both Gaussian and Poisson errors, showing that the marginal effect of transmission type on a car's actualized miles per gallon is statistically indistinguishable from zero.   
+
+## Preprocessing
+
+- Load the built in "mtcars" dataset:
+
+```{r}
+data(mtcars)
+```
+
+## Exploratory Data Analysis
+
+- Produce the basic summary statistics and create a histogram of mpg across both transmission types:
+
+```{r}
+summary(mtcars$mpg)
+
+require(ggplot2)
+g1 <- ggplot2::qplot(mpg, data = mtcars) + ggtitle("Histogram of MPG Across All Cars") +
+  geom_histogram(fill="blue")
+g1
+```
+
+- This distribution hardly seems normal. Even though the median and mean are within 1 mpg of each other, the maximum value is roughly 50% percent further from the median/mean than the minimum value is. This right skew is indicative that a Poisson distribution could be a good fit of the population distribution. 
+
+- Create a boxplot expressing the mpg for car based on whether the transmission is automatic or manual:
+
+```{r}
+require(ggplot2)
+mtcars_amName <- transform(mtcars, transmission = 
+                           sapply(mtcars$am, function(x) if (x == 0) {"automatic"} else {"manual"}))
+g2 <- ggplot2::ggplot(mtcars_amName, aes(factor(transmission), mpg), color = factor(transmission))
+g2 <- g2 + xlab("Transmission Type") + ylab("Miles Per Gallon (MPG)") + 
+  ggtitle("Boxplot of MPG By Transmission Type")
+g2 + geom_boxplot(aes(fill = transmission))
+```
+
+- It can be concluded from this boxplot that manual transmissions get more miles per gallon than automatic transmissions. The median automatic car has about 18 mpg while the median manual car has about 23 mpg. 
+- We also conclude that the automatic car mpg distribution could more easily be inferred to be drawn from a normal distribution because it appears to follow symmetry, both in terms of having 25th and 75th percentiles and minima and maxima that appear roughly equidistant from the median. This is not the case with the manual transmission; judging based on the 25th and 75th percentiles there appears to be some serious right skew. This could be problematic for hypothesis testing and regression analysis.
+
+## Regression Models
+
+- Fit a linear regression model with mpg as a function of the transmission type: 
+
+```{r}
+require(ggplot2)
+fit1 <- lm(mpg ~ factor(transmission), data = mtcars_amName)
+summary(fit1)$coef
+plot(fitted(fit1), residuals(fit1), main = "Errors as a Function of Predicted Scores", xlab = "Predicted MPG", ylab = "MPG Residuals")
+```
+
+- A positive regression coefficient for manual transmission vindicates the conclusion from the boxplot that on average, the mean mpg for manual transmissions is higher than the automatic transmission cars. The estimation says that a car that has a manual transmission expects to get 7.2 higher mpg. 
+- With a transmission p-value of less than 0.01, it would appear that if the necessary regression assumptions hold, we can conclude that there is a statistically significant difference between the transmission types.
+- However, we cannot conclude this because the necessary regression assumptions do not hold. In particular, there is omitted variable bias because with so many different MPG values, there clearly is something impacting MPG besides transmission type.
+- The residual fit seems to be centered around zero for both of the binary predictions based on transmission type. This is good, but clearly there must be other factors impacting mpg. 
+
+- Let's repeat the above equation in "fit1" but add a confounder of weight, because it should fairly be hypothesized that cars that weigh more will require more fuel per mile traveled because there is more to move:
+
+```{r}
+fit1 <- lm(mpg ~ factor(transmission), data = mtcars_amName)
+fit2 <- lm(mpg ~ factor(transmission) + wt, data = mtcars_amName)
+summary(fit2)$coef
+anova(fit1, fit2)
+```
+
+- As hypothesized, a larger car weight corresponds to a lower mpg, holding transmission type constant. The p-value is less than 0.01 implying that it is a significant term, and this corresponds to the conclusion of the ANOVA test that is presented. The ANOVA test has a very small p-value, so we reject the null hypothesis that adding weight to this equation does not improve the equation's fit.
+- Controlling for weight, we see that the transmission now has flipped to a slightly negative coefficient and the p-value is greater than 0.98. This means that we very confidently fail to reject the null hypothesis and conclude that transmission type has no statistically significant impact on miles per gallon that is different from 0, so the perceived significance of variation in the first regression could really be explained by including the car's weight.
+
+- Finally, we estimate a Poisson generalized linear model to make sure that improper underlying distributional assumptions discussed earlier (e.g. the right skew of miles per gallon) are not leading to false results:
+
+```{r}
+summary(glm(mpg ~ factor(transmission) + wt, data = mtcars_amName, family="poisson"))
+```
+
+- By assuming Poisson errors, we still reach the same conclusions as above. Namely, the type of transmission has a statistically insignificant impact on a car's miles per gallon while higher weight has a statistically significantly negative impact on a car's actualized miles per gallon.
