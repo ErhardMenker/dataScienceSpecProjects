@@ -1,0 +1,121 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+
+## Loading and preprocessing the data
+
+```{r}
+dir.create("./plots")
+unzip("./activity.zip") # unzip the file
+ACTIV <- read.csv("./activity.csv")
+```
+
+
+## What is mean total number of steps taken per day?
+
+```{r}
+require(ggplot2)
+# histogram of steps
+ggplot2::qplot(steps, data=ACTIV, geom="histogram") + 
+    geom_histogram(fill="red", colour="black") + 
+    ggtitle("Histogram of Test Subjects' Steps") 
+
+# average steps
+paste("The average number of steps is:", mean(ACTIV$steps, na.rm=TRUE))
+
+# median steps
+paste("The median number of steps is:", median(ACTIV$steps, na.rm=TRUE))
+```
+
+
+## What is the average daily activity pattern?
+
+```{r}
+# calculate a new DF (average steps for a given interval)
+ACTIV2 <- aggregate(steps ~ interval, ACTIV, mean, na.rm=TRUE)
+
+# create a line plot of average steps at a given interval
+ggplot2::qplot(interval, steps, data=ACTIV2, geom="line") + 
+    geom_line(colour="blue") + 
+    geom_point(size=1, colour="black") + 
+    ggtitle("Average Steps Taken at Each Interval")
+
+dev.copy(png, file="./plots/avg_steps.png")
+dev.off()
+
+paste("The interval with the largest steps average is:", 
+      ACTIV2$interval[match(max(ACTIV2$steps), ACTIV2$steps)])
+```
+
+## Imputing missing values
+
+```{r}
+paste("the number of rows with missing data is:", sum(!complete.cases(ACTIV)))
+```
+
+- I will fill in missing data by using the mean for the given interval
+
+```{r}
+# fill in data using the method mentioned above
+
+# calculate a new DF (average steps for a given interval)
+ACTIV2 <- aggregate(steps ~ interval, ACTIV, mean, na.rm=TRUE)
+ACTIV_IMPUTE <- ACTIV
+# iterate through ACTIV and place in this average value if none exists
+for (row in 1:nrow(ACTIV_IMPUTE)) {
+    if (is.na(ACTIV_IMPUTE[row, 1])) {
+        ACTIV_IMPUTE[row, 1] <- ACTIV2[match(ACTIV_IMPUTE[row, 3], ACTIV2$interval), 2]
+    }    
+}
+rm(list="ACTIV2")
+
+# average steps
+paste("The average number of steps in the imputed dataframe is:", 
+      mean(ACTIV_IMPUTE$steps, na.rm=TRUE))
+
+# median steps
+paste("The median number of steps in the imputed dataframe is:", 
+      median(ACTIV_IMPUTE$steps, na.rm=TRUE))
+
+# histogram of steps
+ggplot2::qplot(steps, data=ACTIV_IMPUTE, geom="histogram") + 
+    geom_histogram(fill="red", colour="black") + 
+    ggtitle("Histogram of Test Subjects' Steps (Imputed Data)")
+
+dev.copy(png, file="./plots/hist_steps_impute.png")
+dev.off()
+```
+
+- The mean and median are equivalent whether or not this imputation occurs
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+# create a new DF which is the same as ACTIV but with date coerced to the weekday
+ACTIV2 <- transform.data.frame(ACTIV, date=as.factor(weekdays(as.Date(date))))
+# classify Monday thru Friday as a weekday, Saturday & Sunday as a weekend
+ACTIV2 <- transform.data.frame(ACTIV2, 
+                               weekday_ctgry=as.factor(sapply(ACTIV2$date, function(x) if(x %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")) {"Weekday"} else if(x %in% c("Saturday", "Sunday")) { "Weekend" })))
+
+# calculate a new DF (average steps for a given interval)
+ACTIV_PLOT <- aggregate(steps ~ interval + weekday_ctgry, ACTIV2, mean, na.rm=TRUE)
+
+# plot average number of steps taken across a period across Weekday/Weekend
+ggplot2::qplot(interval, steps, data=ACTIV_PLOT, facets=.~weekday_ctgry, geom="line") +
+    geom_line(colour="darkred") +
+    ggtitle("Average Steps at Each Interval for Weekday/Weekend Observations") 
+
+dev.copy(png, file="./plots/panel_steps.png")
+dev.off()
+```
+
+
+
+
+
+
+
+

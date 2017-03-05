@@ -1,0 +1,111 @@
+<center> <h2>Examining Weather Data for Damage Effects</h2> </center>
+<center> <h3>---------------------------------------</h3> </center>
+
+## Synopsis
+- This statistical report examines storm data provided by the U.S. National Oceanic and Atmospheric Administration (NOAA). This analysis creates two panel bar graph plots which show the impact that the five most devastating weather events in aggregate have on health and economic well being. Summing is used as the aggregation method to increase the total damage effect for events that happen often, all else the same. The measures used to estimate economic damage are property & crop damage and the measures used to illustrate health damage are injuries & fatalities. Using fatalities as the ranking standard, tornados, excessive heat, flash flood, heat, and lightning are the 5 events causing the most damage to health. Using property damage as the ranking standard, tornados, flash floods, tstm wind, floods, and thunderstorm winds are the five most economically damaging weather events.
+
+## Code Generating the Report:
+
+*(Global Environment Parameters Set Here)*
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+
+### Data Processing
+
+1. Download the data and import them:
+```{r}
+# download the data online and store in the working directory
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2",
+              "StormData.csv.bz2")
+
+# read the data on disk into data frame STORM
+STORM <- read.csv("StormData.csv.bz2", stringsAsFactors=FALSE, na.strings=c("", "NA"))
+```
+
+2. Remove data based on failing stated sufficiency conditions:
+```{r}
+# drop any columns that have over 10% of data missing
+STORM <- STORM[, apply(STORM, MARGIN=2, function(x) if(sum(is.na(x)) > (0.1 * nrow(STORM))) {FALSE} else {TRUE})]
+
+# drop any rows that have missing data for any columns
+STORM <- na.omit(STORM)
+```
+
+3. Do final touch ups to the STORM data frame format for consistency
+```{r}
+# lower case the titles
+names(STORM) <- tolower(names(STORM))
+
+# lower case all event types & trim whitespace to capture duplicate events
+STORM <- transform(STORM, evtype = trimws(tolower(evtype)))
+```
+
+4. Prepare the data frame STORM_HEALTH (shows the leading events harming health)
+```{r}
+# create STORM_HEALTH data frame which sums the fatalities & injuries by event type
+STORM_HEALTH <- aggregate(cbind(fatalities, injuries) ~ evtype, data=STORM, sum)
+
+require(dplyr)
+
+# sort STORM_HEALTH by descending fatalities
+STORM_HEALTH <- dplyr::arrange(STORM_HEALTH, desc(fatalities))
+
+# only include the top 5 fatality causing event types (these will be plotted)
+STORM_HEALTH <- STORM_HEALTH[1:5, ]
+```
+
+5. Prepare the data frame STORM_ECON (shows the leading property damage events)
+```{r}
+# create STORM_ECON data frame which sums the property/crop property damage by event type
+STORM_ECON <- aggregate(cbind(propdmg, cropdmg) ~ evtype, data=STORM, sum)
+
+require(dplyr)
+
+# sort STORM_ECON in descending order by damage caused to property damage
+STORM_ECON <- dplyr::arrange(STORM_ECON, desc(propdmg))
+
+# subset the top 5 property damage causing event types (for plotting)
+STORM_ECON <- STORM_ECON[1:5, ]
+```
+
+
+### Results
+
+1. Plot the Event Types Causing the Largest Health Damage
+```{r, eval=TRUE}
+require(ggplot2)
+require(gridExtra)
+
+# graph 1 (5 most death causing events)
+gr1 <- ggplot2::ggplot(data=STORM_HEALTH, aes(evtype, fatalities)) + 
+    geom_bar(stat="identity", fill="red") + 
+    labs(title="Events Causing Most Fatalities", x="Event Type", y="Fatalities")
+
+# graph 2 (5 most injury causing events)
+gr2 <- ggplot2::ggplot(data=STORM_HEALTH, aes(evtype, injuries)) + 
+    geom_bar(stat="identity", fill="green") + 
+    labs(title="Events Causing Most Injuries", x="Event Type", y="Injuries")
+
+gridExtra::grid.arrange(gr1, gr2, nrow=2)
+```
+
+2. Plot the Event Types Causing the Largest Economic Damage
+```{r, eval=TRUE}
+require(ggplot2)
+require(gridExtra)
+
+# graph 1 (5 most property damaging events)
+gr1 <- ggplot2::ggplot(data=STORM_ECON, aes(evtype, propdmg)) + 
+    geom_bar(stat="identity", fill="blue") + 
+    labs(title="Events Causing Most Property Damage", x="Event Type", y="Property Damage")
+
+# graph 2 (5 most crop damaging events)
+gr2 <- ggplot2::ggplot(data=STORM_ECON, aes(evtype, cropdmg)) + 
+    geom_bar(stat="identity", fill="yellow") + 
+    labs(title="Events Causing Most Crop Damage", x="Event Type", y="Crop Damage")
+
+gridExtra::grid.arrange(gr1, gr2, nrow=2)
+```
