@@ -1,0 +1,93 @@
+This markdown explains the two dataframes created by ./run_analysis.r
+This document relies on and sources the zip file that can be downloaded at: https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip
+The data are described from the original source at: http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
+
+The dataset includes the following files at ./data/UCI HAR Dataset:
+===================================================================
+
+- 'README.txt'
+
+- 'features_info.txt': Shows information about the variables used on the feature vector.
+
+- 'features.txt': List of all features.
+
+- 'activity_labels.txt': Links the class labels with their activity name.
+
+- 'train/X_train.txt': Training set.
+
+- 'train/y_train.txt': Training labels.
+
+- 'test/X_test.txt': Test set.
+
+- 'test/y_test.txt': Test labels.
+
+The dataset includes the following files at ./ :
+================================================
+
+- "CodeBook.md'
+
+- 'README.md'
+
+- 'run_analysis.r'
+
+The data that are calculated include the series:
+================================================
+
+- Note that units are described at the original source whose URL is posted at this CodeBook's overview
+
+Unit Notes:
+===========
+
+- Series postscripted with "XYZ" is the 3 axial signal in the X, Y, and Z direction
+
+- Series postscripted with "Mag" is the Euclidean Norm calculated in 3 dimensional space. 
+
+- Concepts (3 Axial Signals calculated via Fast Fourier Transform) in DF_ALL:
+
+tBodyAcc-XYZ
+tGravityAcc-XYZ
+tBodyAccJerk-XYZ
+tBodyGyro-XYZ
+tBodyGyroJerk-XYZ
+tBodyAccMag
+tGravityAccMag
+tBodyAccJerkMag
+tBodyGyroMag
+tBodyGyroJerkMag
+fBodyAcc-XYZ
+fBodyAccJerk-XYZ
+fBodyGyro-XYZ
+fBodyAccMag
+fBodyAccJerkMag
+fBodyGyroMag
+fBodyGyroJerkMag
+
+Reported Methods of Measurement (Normalized to be bounded on [-1, 1]):
+
+mean(): Mean value
+std(): Standard deviation
+gravityMean
+tBodyAccMean
+tBodyAccJerkMean
+tBodyGyroMean
+tBodyGyroJerkMean
+
+Further Transformations Occur and Appear in DF_SMRY:
+
+mean: the mean value of each series in the original units, grouped by activity
+standard deviation: the standard deviation of each series in the original units, grouped by activity
+
+Activities:
+
+laying
+sitting
+standing 
+walking
+walking downstairs
+walking upstairs
+
+Transformations:
+================
+
+- Please see ./README.md to see how the original data series were transformed to report the above measures and groupings
+
